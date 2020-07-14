@@ -15,15 +15,19 @@ SPOTAPI = "https://api.spotify.com"
 
 os.makedirs('cookies', exist_ok=True)
 
+#Users will start here and we immediately check for an access token. Essentially they need it or theres nothing to do. 
 @app.route('/')   
 def code():
     try:            
         r = getToken()
         return me(r)
     except Exception as e:
-        return e
+        return r
 
 def getAuthCode():
+    #This is called when we need to begin an oauth handshake. It requests the OAuth code and tell spotify who we are.
+    #The user will be redirected to the spotify login page. After logging in (successfully) they will be returned to our 
+    # site with a uniqe code that identifies us.
     codeparams = urllib.parse.urlencode({
                 'client_id':CLIENT_ID,
                 'response_type':'code',
@@ -32,8 +36,10 @@ def getAuthCode():
         })
     return redirect(f"{baseURL}/authorize?{codeparams}")
 
-
 def getToken():
+    """
+    This function figures out if there is a good refresh token for someone and if not sends them to start the oauth flow.
+    """
     id = request.cookies.get('id')
     try:
         with open(f'cookies/{id}', 'r+') as c:
@@ -61,6 +67,10 @@ def refresh(refresh_token):
 
 @app.route('/auth')
 def auth():
+    #This is the second half of the OAuth handshake. With a uniqe code in hand (identifying the app) we can ask spotify 
+    # to request access on behalf of the user. This is where the user is presented with a login screen. They will at-once
+    # authenticate themselves and either grant or deny access.  They are redirected to the me function so that the parameters
+    # will get stripped out of the response.
     try:
         code = request.args.get('code')
         state = request.args.get('state')
@@ -70,16 +80,17 @@ def auth():
                                     'redirect_uri': f'{REDIRECT_HOST}'},
                                 headers={'content_type':'application/x-www-form-urlencoded',
                                         'Authorization':f'Basic {B64AUTH}'})
-                
+        token=token.json()
        
-        return redirect('/me')
+        return redirect(me(token))
     except Exception as e:
         return e
 
 
 @app.route('/me')
 def me(token=None):
-    
+    # Get the spotify id for a user and use it to create their cookie and save the access token on the server. 
+    # The access and refresh token could also be stored on the users computer which makes it much easier to manage sessions. 
     data = requests.get(f'{SPOTAPI}/v1/me',
                         headers = {'Authorization':f"Bearer {token['access_token']}"})
     data=data.json()
