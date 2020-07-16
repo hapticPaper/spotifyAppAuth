@@ -6,7 +6,7 @@ app = Flask('Spotify Auth')
 
 baseURL = "https://accounts.spotify.com"
 CLIENT_ID = "9eb231ae8ee44d21a49c369a8e6409a7"
-client_secret =  os.getenv('SPOTIFY_SECRET',"23b7b88baf2d488ea1c515c5d5fa3b30")
+client_secret =  os.getenv('SPOTIFY_SECRET',"<INSERT SECRET KEY>")
 B64AUTH = base64.b64encode(f"{CLIENT_ID}:{client_secret}".encode('utf8')).decode('utf8')
 serving_domain = 'localhost'
 PORT = 5000
